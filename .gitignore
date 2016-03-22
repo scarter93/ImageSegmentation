@@ -1,6 +1,6 @@
 *.dll
 *.pdf
-*.mex64
+*.mexw64
 /include/*
 /bin/*
 /libs/*
