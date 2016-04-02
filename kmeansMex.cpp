@@ -65,11 +65,17 @@ void mexFunction(int nlhs,  mxArray* plhs[], int nrhs, const mxArray* prhs[]){
 			}
 		}
 	}
+
+	mexPrintf("finished copying labels\n");
+
 	Mat centers;
     kmeans(feature_mat, 2, label,TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10000, 0.0001), 5, KMEANS_PP_CENTERS, centers);
+	mexPrintf("generating feature matrix from kmeans function\n");
+	imwrite("post kmeans.jpg", label);
+	///waitKey(1);
 
 	Mat foreground_mask = Mat::zeros(image.size().height,image.size().width, CV_8UC1);
-
+	mexPrintf("generated and copying to foreground mask\n");
 	for(int i = 0; i < image.rows; i++){
 		for( int j = 0; j < image.cols; j++){
 			if(label.at<int>(image.cols*i + j,0) == 1){
@@ -77,14 +83,32 @@ void mexFunction(int nlhs,  mxArray* plhs[], int nrhs, const mxArray* prhs[]){
 			}
 		}
 	}
+	mexPrintf("foreground mask copying complete\n");
 
-	const size_t dims = image.size().width;
+	int dims[2]; 
+	dims[2] = image.size().height;
+	dims[1] = image.size().width;
 
-	mxArray* result = mxCreateNumericArray(image.size().height, &dims, mxUINT8_CLASS,mxREAL);
+	mexPrintf("generating numeric array\n");
+	plhs[0]= mxCreateNumericArray(2, dims, (mxClassID)9,mxREAL);
+	mexPrintf("generated output array... filling array now\n");
+	unsigned char* data_ptr = (unsigned char*)mxGetData(plhs[0]);
+	mexPrintf("data_ptr address = %x\n", data_ptr);
+	mexPrintf("accessing mxArray pointer now\n");
+	for(int j = 0; j < image.cols; j++){
+		for( int i = 0; i < image.rows; i++){
+			//mexPrintf("accessing foreground data now\n");
+			
+			//mexPrintf("data (foreground_mask) at (%d,%d) = %d\n", i, j, foreground_mask.at<unsigned char>(i,j));
+			//data_ptr[0] = foreground_mask.at<unsigned char>(i,j);
+			
+			//data_ptr++;
+		}
+		//mexPrintf("column %d being filled\n", j);
+	}
+	mexPrintf("output array filled\n");
 
-
-
-    plhs[0] = mxCreateDoubleScalar(420);
+    //plhs[0] = result;
     
     return;
 }
