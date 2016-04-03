@@ -1,9 +1,8 @@
-#include "mex.h"
+
 #include <string.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include "matrix.h"
 #include <stdint.h>
 #include "opencv2/ml/ml.hpp"
 

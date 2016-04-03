@@ -1,10 +1,6 @@
 *.dll
 *.pdf
 *.mexw64
-/include/*
-/bin/*
-/libs/*
-*.exe
 
 # User-specific files
 *.suo
