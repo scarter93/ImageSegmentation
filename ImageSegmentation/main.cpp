@@ -3,6 +3,7 @@
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <stdint.h>
+#include <opencv2\ml\ml.hpp>
 #include "generate_rect.h"
 
 using namespace cv;
@@ -10,6 +11,7 @@ using namespace cv;
 
 Mat my_kmeans(Mat &image, Rect &rectangle);
 Mat GraphCut(Mat &image, Rect &rectangle);
+Mat GMM(Mat &image, Rect &rectangle);
 
 int main(){
 	Mat image = imread("100_0109.png");
@@ -68,7 +70,7 @@ Mat my_kmeans(Mat &image, Rect &rectangle){
 	//			feature_mat.at<float>(i*gray_image.cols + j, 0) = 0;
 	//			feature_mat.at<float>(i*gray_image.cols + j, 1) = 0;
 	//			feature_mat.at<float>(i*gray_image.cols + j, 2) = 0;
-
+	//
 	//		}
 	//	}
 	//}
@@ -134,5 +136,44 @@ Mat GraphCut(Mat &image, Rect &rectangle) {
 	image.copyTo(result, mask);
 
 	return result;
+
+}
+
+Mat GMM(Mat &image, Rect &rectangle) {
+
+	Mat feature_mat = Mat::zeros(image.size().width*image.size().height, 3, CV_64F);
+
+	int numClusters = 2;
+	EM em_object(numClusters);
+
+	for (int i = 0; i < image.rows; i++) {
+		for (int j = 0; j < image.cols; j++) {
+			if (rectangle.contains(Point(j, i))) {
+				//cout << "inside rect" << endl;
+				feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
+				feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
+				feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
+			}
+			else {
+				feature_mat.at<float>(i*image.cols + j, 0) = 0;
+				feature_mat.at<float>(i*image.cols + j, 1) = 0;
+				feature_mat.at<float>(i*image.cols + j, 2) = 0;
+
+			}
+		}
+	}
+
+	Mat init_means = Mat::zeros(numClusters, 3, CV_64F);
+
+	// TODO: create initial means based on foreground and background
+	
+	vector<Mat> cov_mats(numClusters);
+	
+	
+
+
+
+
+
 
 }
