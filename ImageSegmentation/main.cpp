@@ -21,8 +21,9 @@ int main(){
 		cout << "rectangle contains this point" << endl;
 	}
 
-	imwrite("kmeans_out.png",my_kmeans(image, rectangle));
-	imwrite("graphCut_out.png", GraphCut(image, rectangle));
+	//imwrite("kmeans_out.png",my_kmeans(image, rectangle));
+	//imwrite("graphCut_out.png", GraphCut(image, rectangle));
+	GMM(image, rectangle);
 	return 0;
 }
 
@@ -141,10 +142,11 @@ Mat GraphCut(Mat &image, Rect &rectangle) {
 
 Mat GMM(Mat &image, Rect &rectangle) {
 
-	Mat feature_mat = Mat::zeros(image.size().width*image.size().height, 3, CV_64F);
+	Mat feature_mat = Mat::zeros(image.size().width*image.size().height, 3, CV_32F);
 
 	int numClusters = 2;
-	EM em_object(numClusters);
+
+
 
 	for (int i = 0; i < image.rows; i++) {
 		for (int j = 0; j < image.cols; j++) {
@@ -155,18 +157,87 @@ Mat GMM(Mat &image, Rect &rectangle) {
 				feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
 			}
 			else {
-				feature_mat.at<float>(i*image.cols + j, 0) = 0;
-				feature_mat.at<float>(i*image.cols + j, 1) = 0;
-				feature_mat.at<float>(i*image.cols + j, 2) = 0;
+				feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
+				feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
+				feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
 
 			}
 		}
 	}
 
-	Mat init_means = Mat::zeros(numClusters, 3, CV_64F);
+	cv::EM em_obj(2);
 
-	// TODO: create initial means based on foreground and background
+
+
+	Mat means = Mat::zeros(numClusters, 3, CV_64F);
+
+	int cnt_fgd = 0;
+	int cnt_bgd = 0;
 	
-	vector<Mat> cov_mats(numClusters);
+	for (int i = 0; i < image.rows; i++) {
+		for (int j = 0; j < image.cols; j++) {
+			if (rectangle.contains(Point(j, i))) {
+				//cout << "inside rect" << endl;
+				cnt_fgd++;
+				means.at<double>(0, 0) += image.at<cv::Vec3b>(i, j)[0];
+				means.at<double>(0, 1) += image.at<cv::Vec3b>(i, j)[1];
+				means.at<double>(0, 2) += image.at<cv::Vec3b>(i, j)[2];
+			}else {
+				cnt_bgd++;
+				means.at<double>(1, 0) += image.at<cv::Vec3b>(i, j)[0];
+				means.at<double>(1, 1) += image.at<cv::Vec3b>(i, j)[1];
+				means.at<double>(1, 2) += image.at<cv::Vec3b>(i, j)[2];
+			}
+		}
+	}
+	cout << means << endl;
+
+	means.at<double>(0, 0) = means.at<double>(0, 0) / cnt_fgd;
+	means.at<double>(0, 1) = means.at<double>(0, 1) / cnt_fgd;
+	means.at<double>(0, 2) = means.at<double>(0, 2) / cnt_fgd;
+
+	means.at<double>(1, 0) = means.at<double>(1, 0) / cnt_bgd;
+	means.at<double>(1, 1) = means.at<double>(1, 1) / cnt_bgd;
+	means.at<double>(1, 2) = means.at<double>(1, 2) / cnt_bgd;
+
+
+	cout << means << endl;
+
+	Mat cov, out_means;
+
+
+	//calcCovarMatrix(&means, 3, cov, out_means, CV_COVAR_NORMAL | CV_COVAR_ROWS);
+	
+
+	Mat weights = Mat::zeros(1, numClusters, CV_64F);
+
+	weights.at<double>(0, 0) = (double)cnt_fgd / (cnt_bgd + cnt_fgd);
+	weights.at<double>(0, 1) = (double)cnt_fgd / (cnt_bgd + cnt_fgd);
+
+	Mat labels, probs, likelihoods;
+	//Mat labels_bgd;
+
+	em_obj.trainE(feature_mat, means, noArray(), weights, likelihoods, labels, probs);
+
+
+	Mat foreground_mask = Mat::zeros(image.size().height, image.size().width, CV_8UC1);
+	cout << "generated and copying to foreground mask" << endl;
+	for (int i = 0; i < image.rows; i++) {
+		for (int j = 0; j < image.cols; j++) {
+			if (labels.at<int>(i*image.cols + j, 0) == 1) {
+				foreground_mask.at<unsigned char>(i, j) = 255;
+			}
+		}
+	}
+	cout << "foreground mask copying complete" << endl;
+	imwrite("foreground_mask_gmm.png", foreground_mask);
+
+	Mat result;
+
+	image.copyTo(result, foreground_mask);
+	imwrite("gmm_out.png", result);
+	return result;
+	//em_obj.trainE(feature_mat, means, cov_mats[1], weights, noArray(), labels_fgd);
+
 
 }
