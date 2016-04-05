@@ -21,7 +21,7 @@ int main(){
 		cout << "rectangle contains this point" << endl;
 	}
 
-	//imwrite("kmeans_out.png",my_kmeans(image, rectangle));
+	imwrite("kmeans_out.png",my_kmeans(image, rectangle));
 	imwrite("graphCut_out.png", GraphCut(image, rectangle));
 	return 0;
 }
@@ -41,39 +41,39 @@ Mat my_kmeans(Mat &image, Rect &rectangle){
 	Mat gray_image;
 	cvtColor(image, gray_image, CV_BGR2GRAY);
 
-	for (int i = 0; i < image.rows; i++) {
-		for (int j = 0; j < image.cols; j++) {
-			if ( rectangle.contains(Point(j,i))) {
-				//cout << "inside rect" << endl;
-				feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
-				feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
-				feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
-			}
-			else {
-				feature_mat.at<float>(i*image.cols + j, 0) = 0;
-				feature_mat.at<float>(i*image.cols + j, 1) = 0;
-				feature_mat.at<float>(i*image.cols + j, 2) = 0;
-
-			}
-		}
-	}
-
-	//for (int i = 0; i < gray_image.rows; i++) {
-	//	for (int j = 0; j < gray_image.cols; j++) {
-	//		if (rectangle.contains(Point(j, i))) {
+	//for (int i = 0; i < image.rows; i++) {
+	//	for (int j = 0; j < image.cols; j++) {
+	//		if ( rectangle.contains(Point(j,i))) {
 	//			//cout << "inside rect" << endl;
-	//			feature_mat.at<float>(i*gray_image.cols + j, 0) = gray_image.at<uchar>(i,j);
-	//			feature_mat.at<float>(i*gray_image.cols + j, 1) = gray_image.at<uchar>(i, j);
-	//			feature_mat.at<float>(i*gray_image.cols + j, 2) = gray_image.at<uchar>(i, j);
+	//			feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
+	//			feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
+	//			feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
 	//		}
 	//		else {
-	//			feature_mat.at<float>(i*gray_image.cols + j, 0) = 0;
-	//			feature_mat.at<float>(i*gray_image.cols + j, 1) = 0;
-	//			feature_mat.at<float>(i*gray_image.cols + j, 2) = 0;
-	//
+	//			feature_mat.at<float>(i*image.cols + j, 0) = 0;
+	//			feature_mat.at<float>(i*image.cols + j, 1) = 0;
+	//			feature_mat.at<float>(i*image.cols + j, 2) = 0;
+
 	//		}
 	//	}
 	//}
+
+	for (int i = 0; i < gray_image.rows; i++) {
+		for (int j = 0; j < gray_image.cols; j++) {
+			if (rectangle.contains(Point(j, i))) {
+				//cout << "inside rect" << endl;
+				feature_mat.at<float>(i*gray_image.cols + j, 0) = gray_image.at<uchar>(i,j);
+				feature_mat.at<float>(i*gray_image.cols + j, 1) = gray_image.at<uchar>(i, j);
+				feature_mat.at<float>(i*gray_image.cols + j, 2) = gray_image.at<uchar>(i, j);
+			}
+			else {
+				feature_mat.at<float>(i*gray_image.cols + j, 0) = 0;
+				feature_mat.at<float>(i*gray_image.cols + j, 1) = 0;
+				feature_mat.at<float>(i*gray_image.cols + j, 2) = 0;
+	
+			}
+		}
+	}
 
 	//imwrite("pre kmeans.png", feature_mat);
 	//cout << feature_mat << endl;
@@ -168,12 +168,5 @@ Mat GMM(Mat &image, Rect &rectangle) {
 	// TODO: create initial means based on foreground and background
 	
 	vector<Mat> cov_mats(numClusters);
-	
-	
-
-
-
-
-
 
 }
