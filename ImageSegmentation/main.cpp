@@ -6,83 +6,101 @@
 #include <opencv2\ml\ml.hpp>
 #include "generate_rect.h"
 
-using namespace cv;
-//using namespace std;
+///Defines for options
 
-Mat my_kmeans(Mat &image, Rect &rectangle);
-Mat GraphCut(Mat &image, Rect &rectangle);
-Mat GMM(Mat &image, Rect &rectangle);
+#define TREE 0
+#define TOAD 1
+#define PENG 2
+
+///Select the image to work on
+
+//#define IMG_SELECT TREE
+#define IMG_SELECT TOAD
+//#define IMG_SELECT PENG
+
+
+using namespace cv;
+
+
+Mat my_kmeans(Mat &image, Rect &rectangle, int gray);
+Mat GraphCut(Mat &image, Rect &rectangle, int lab);
+Mat GMM(Mat &image, Rect &rectangle, int gray);
 
 int main(){
 	Mat image = imread("100_0109.png");
-	Rect rectangle = generate_rect(image);
+	Mat image1 = imread("b4nature_animals_land009.png");
+	Mat image2 = imread("cheeky_penguin.png");
+	//run tree if desired
+	if (IMG_SELECT == TREE) {
+		Rect rectangle = generate_rect(image);
 
-	if (rectangle.contains(Point(50, 50))) {
-		cout << "rectangle contains this point" << endl;
+		imwrite("tree_kmeans.png", my_kmeans(image, rectangle, 0));
+		imwrite("tree_graphCut.png", GraphCut(image, rectangle, 0));
+		imwrite("tree_gmm.png", GMM(image, rectangle, 0));
+
+		imwrite("tree_kmeans_gray.png", my_kmeans(image, rectangle, 1));
+		imwrite("tree_graphCut_lab.png", GraphCut(image, rectangle, 1));
+		imwrite("tree_gmm_gray.png", GMM(image, rectangle, 1));
 	}
+	//run toad if desired
+	else if (IMG_SELECT == TOAD) {
+		Rect rectangle1 = generate_rect(image1);
 
-	//imwrite("kmeans_out.png",my_kmeans(image, rectangle));
-	//imwrite("graphCut_out.png", GraphCut(image, rectangle));
-	GMM(image, rectangle);
+		imwrite("toad_kmeans.png", my_kmeans(image1, rectangle1, 0));
+		imwrite("toad_graphCut.png", GraphCut(image1, rectangle1, 0));
+		imwrite("toad_gmm.png", GMM(image1, rectangle1, 0));
+
+		imwrite("toad_kmeans_gray.png", my_kmeans(image1, rectangle1, 1));
+		imwrite("toad_graphCut_lab.png", GraphCut(image1, rectangle1, 1));
+		imwrite("toad_gmm_gray.png", GMM(image1, rectangle1, 1));
+
+	}
+	//run penguin if desired
+	else if (IMG_SELECT == PENG) {
+		Rect rectangle2 = generate_rect(image2);
+
+		imwrite("penguin_kmeans.png", my_kmeans(image2, rectangle2, 0));
+		imwrite("penguin_graphCut.png", GraphCut(image2, rectangle2, 0));
+		imwrite("penguin_gmm.png", GMM(image2, rectangle2, 0));
+
+		imwrite("penguin_kmeans_gray.png", my_kmeans(image2, rectangle2, 1));
+		imwrite("penguin_graphCut_lab.png", GraphCut(image2, rectangle2, 1));
+		imwrite("penguin_gmm_gray.png", GMM(image2, rectangle2, 1));
+	}
 	return 0;
 }
 
-Mat my_kmeans(Mat &image, Rect &rectangle){
-  
-    //std::string img(img_name);
-    //cout << "img_name = " << img_name << endl;
-    //cv::Mat image = cv::imread(img_name);
-	//imshow("test", image);
-	//waitKey(1);
-
+Mat my_kmeans(Mat &image, Rect &rectangle,int gray){
+ 	//feature matrix
     Mat feature_mat = Mat::zeros(image.size().width*image.size().height,3,CV_32F);
 
-	//Mat feature_mat = image.clone().reshape(1,3).t();
-	//feature_mat.convertTo(feature_mat,CV_32F);
-	Mat gray_image;
-	cvtColor(image, gray_image, CV_BGR2GRAY);
-
-	//for (int i = 0; i < image.rows; i++) {
-	//	for (int j = 0; j < image.cols; j++) {
-	//		if ( rectangle.contains(Point(j,i))) {
-	//			//cout << "inside rect" << endl;
-	//			feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
-	//			feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
-	//			feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
-	//		}
-	//		else {
-	//			feature_mat.at<float>(i*image.cols + j, 0) = 0;
-	//			feature_mat.at<float>(i*image.cols + j, 1) = 0;
-	//			feature_mat.at<float>(i*image.cols + j, 2) = 0;
-
-	//		}
-	//	}
-	//}
-
-	for (int i = 0; i < gray_image.rows; i++) {
-		for (int j = 0; j < gray_image.cols; j++) {
-			if (rectangle.contains(Point(j, i))) {
+	//check to see if image should be grayscale
+	if (gray) {
+		Mat gray;
+		cvtColor(image,gray, CV_BGR2GRAY);
+		cvtColor(gray, image, CV_GRAY2BGR);
+	}
+	//fill feature mat
+	for (int i = 0; i < image.rows; i++) {
+		for (int j = 0; j < image.cols; j++) {
+			if ( rectangle.contains(Point(j,i))) {
 				//cout << "inside rect" << endl;
-				feature_mat.at<float>(i*gray_image.cols + j, 0) = gray_image.at<uchar>(i,j);
-				feature_mat.at<float>(i*gray_image.cols + j, 1) = gray_image.at<uchar>(i, j);
-				feature_mat.at<float>(i*gray_image.cols + j, 2) = gray_image.at<uchar>(i, j);
+				feature_mat.at<float>(i*image.cols + j, 0) = image.at<cv::Vec3b>(i, j)[0];
+				feature_mat.at<float>(i*image.cols + j, 1) = image.at<cv::Vec3b>(i, j)[1];
+				feature_mat.at<float>(i*image.cols + j, 2) = image.at<cv::Vec3b>(i, j)[2];
 			}
 			else {
-				feature_mat.at<float>(i*gray_image.cols + j, 0) = 0;
-				feature_mat.at<float>(i*gray_image.cols + j, 1) = 0;
-				feature_mat.at<float>(i*gray_image.cols + j, 2) = 0;
-	
+				feature_mat.at<float>(i*image.cols + j, 0) = 0;
+				feature_mat.at<float>(i*image.cols + j, 1) = 0;
+				feature_mat.at<float>(i*image.cols + j, 2) = 0;
+
 			}
 		}
 	}
-
-	//imwrite("pre kmeans.png", feature_mat);
-	//cout << feature_mat << endl;
-	
 	printf("feature_mat.rows,feature_mat.cols = %d,%d\n", feature_mat.rows,feature_mat.cols);
 	
 	Mat label = Mat::zeros(image.size().width*image.size().height,1, CV_32S);
-
+	//fill label matrix
 	for(int i = 0; i < image.rows; i++){
 		for( int j = 0; j < image.cols; j++){
 			if(rectangle.contains(Point(j,i))){
@@ -97,16 +115,13 @@ Mat my_kmeans(Mat &image, Rect &rectangle){
 	printf("finished copying labels\n");
 
 	Mat centers;
+	//run k-means
     kmeans(feature_mat, 2, label,TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10000, 0.0001), 5, KMEANS_PP_CENTERS, centers);
 
 	cout << "generating feature matrix from kmeans function" << endl;
-	//feature_mat.reshape(image.size().width, image.size().height);
-	//imwrite("post kmeans.png", feature_mat);
-
-	//cout << feature_mat << endl;
-	//waitKey(1);
 
 	Mat foreground_mask = Mat::zeros(image.size().height,image.size().width, CV_8UC1);
+	//generate foreground mask
 	cout << "generated and copying to foreground mask" << endl;
 	for(int i = 0; i < image.rows; i++){
 		for( int j = 0; j < image.cols; j++){
@@ -116,38 +131,40 @@ Mat my_kmeans(Mat &image, Rect &rectangle){
 		}
 	}
 	cout << "foreground mask copying complete" << endl;
-	imwrite("foreground_mask.png", foreground_mask);
-
+	//use mask and return
 	Mat output;
-
 	image.copyTo(output, foreground_mask);
-
 	return output;
-    
 }
 
-Mat GraphCut(Mat &image, Rect &rectangle) {
-	Mat mask, bgdModel, fgdModel;
-	grabCut(image, mask, rectangle, bgdModel, fgdModel, 1, GC_INIT_WITH_RECT);
+Mat GraphCut(Mat &image, Rect &rectangle, int lab) {
+	//check to see if Lab is wanted
+	if (lab) {
+		Mat lab_im;
+		cvtColor(image, lab_im, CV_BGR2Lab);
+		lab_im.copyTo(image);
+	}
 
+	Mat mask, bgdModel, fgdModel;
+	//perform graphcut
+	grabCut(image, mask, rectangle, bgdModel, fgdModel, 5, GC_INIT_WITH_RECT);
 	cv::compare(mask, cv::GC_PR_FGD, mask, cv::CMP_EQ);
-	//Mat foreground(image.size(), CV_8UC1, cv::Scalar(255));
-	imwrite("mask_GCM.png", mask);
+	//use mask and return result
 	Mat result;
 	image.copyTo(result, mask);
-
 	return result;
-
 }
 
-Mat GMM(Mat &image, Rect &rectangle) {
-
+Mat GMM(Mat &image, Rect &rectangle, int gray) {
 	Mat feature_mat = Mat::zeros(image.size().width*image.size().height, 3, CV_32F);
-
 	int numClusters = 2;
-
-
-
+	//use grayscale if desired
+	if (gray) {
+		Mat gray;
+		cvtColor(image, gray, CV_BGR2GRAY);
+		cvtColor(gray, image, CV_GRAY2BGR);
+	}
+	//genertae feature matrix
 	for (int i = 0; i < image.rows; i++) {
 		for (int j = 0; j < image.cols; j++) {
 			if (rectangle.contains(Point(j, i))) {
@@ -164,16 +181,12 @@ Mat GMM(Mat &image, Rect &rectangle) {
 			}
 		}
 	}
-
 	cv::EM em_obj(2);
-
-
-
 	Mat means = Mat::zeros(numClusters, 3, CV_64F);
 
 	int cnt_fgd = 0;
 	int cnt_bgd = 0;
-	
+	//generate means
 	for (int i = 0; i < image.rows; i++) {
 		for (int j = 0; j < image.cols; j++) {
 			if (rectangle.contains(Point(j, i))) {
@@ -200,26 +213,19 @@ Mat GMM(Mat &image, Rect &rectangle) {
 	means.at<double>(1, 1) = means.at<double>(1, 1) / cnt_bgd;
 	means.at<double>(1, 2) = means.at<double>(1, 2) / cnt_bgd;
 
-
 	cout << means << endl;
-
-	Mat cov, out_means;
-
-
-	//calcCovarMatrix(&means, 3, cov, out_means, CV_COVAR_NORMAL | CV_COVAR_ROWS);
-	
+	Mat cov;
 
 	Mat weights = Mat::zeros(1, numClusters, CV_64F);
-
+	//generate weights
 	weights.at<double>(0, 0) = (double)cnt_fgd / (cnt_bgd + cnt_fgd);
 	weights.at<double>(0, 1) = (double)cnt_fgd / (cnt_bgd + cnt_fgd);
 
 	Mat labels, probs, likelihoods;
-	//Mat labels_bgd;
-
+	//train the EM
 	em_obj.trainE(feature_mat, means, noArray(), weights, likelihoods, labels, probs);
 
-
+	//generate the foreground mask
 	Mat foreground_mask = Mat::zeros(image.size().height, image.size().width, CV_8UC1);
 	cout << "generated and copying to foreground mask" << endl;
 	for (int i = 0; i < image.rows; i++) {
@@ -230,14 +236,8 @@ Mat GMM(Mat &image, Rect &rectangle) {
 		}
 	}
 	cout << "foreground mask copying complete" << endl;
-	imwrite("foreground_mask_gmm.png", foreground_mask);
-
+	//use mask and display result
 	Mat result;
-
 	image.copyTo(result, foreground_mask);
-	imwrite("gmm_out.png", result);
 	return result;
-	//em_obj.trainE(feature_mat, means, cov_mats[1], weights, noArray(), labels_fgd);
-
-
 }

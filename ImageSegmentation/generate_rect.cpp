@@ -1,13 +1,11 @@
 /**
+/ Modified from:
 / https://jayrambhia.wordpress.com/2012/09/20/roi-bounding-box-selection-of-mat-images-in-opencv/
 /
-/ Credit: Jay Rambhia
 /
 **/
 
 #include "generate_rect.h"
-
-
 
 Point point1, point2; /* vertical points of the bounding box */
 int drag = 0;
